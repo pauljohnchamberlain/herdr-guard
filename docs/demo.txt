@@ -1,0 +1,17 @@
+Herdr Guard synthetic canary
+
+Session: synthetic-canary
+Workspace: w-synthetic (not a real user workspace)
+
+$ herdr-guard snapshot
+{ "workspaces": [{ "id": "w-synthetic", "label": "demo", "focused": false }] }
+
+$ herdr-guard preview --operation workspace.rename --target-id w-synthetic --value-json '{"label":"review"}'
+{ "status": "preview", "operation": "workspace.rename", "applyArgs": ["apply", "..."] }
+
+$ herdr-guard apply [exact applyArgs returned above]
+{ "status": "applied", "postcondition": "same-workspace-new-label" }
+
+$ herdr-guard preview --operation workspace.close --target-id w-synthetic
+$ herdr-guard apply [exact applyArgs returned above]
+{ "status": "applied", "postcondition": "workspace-absent" }

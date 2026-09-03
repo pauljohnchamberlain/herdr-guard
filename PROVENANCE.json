@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "project": "herdr-guard",
+  "version": "0.1.0",
+  "source": "https://github.com/kaizen-brands/herdr-guard",
+  "build": "npm ci && npm run build",
+  "runtime": "node >=20",
+  "dependencies": {
+    "runtime": [],
+    "development": ["typescript", "@types/node"]
+  },
+  "generated": ["dist/"],
+  "network": "none at runtime"
+}

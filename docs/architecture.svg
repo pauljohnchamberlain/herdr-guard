@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="240" viewBox="0 0 900 240" role="img" aria-labelledby="title desc">
+  <title id="title">Herdr Guard architecture</title>
+  <desc id="desc">An external agent skill resolves the plugin root, invokes a typed CLI, which validates operations, writes audit receipts, and calls the local Herdr CLI.</desc>
+  <style>text{font:16px sans-serif;fill:#17202a} .box{fill:#eef3f8;stroke:#52708a;stroke-width:2} .arrow{stroke:#17202a;stroke-width:2;marker-end:url(#m)}</style>
+  <defs><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#17202a"/></marker></defs>
+  <rect class="box" x="20" y="85" width="170" height="70" rx="8"/><text x="45" y="115">Agent skill</text><text x="38" y="138">root resolver</text>
+  <line class="arrow" x1="190" y1="120" x2="260" y2="120"/>
+  <rect class="box" x="260" y="55" width="220" height="130" rx="8"/><text x="315" y="90">Typed CLI</text><text x="285" y="118">registry + guards</text><text x="290" y="144">preview/apply/reconcile</text>
+  <line class="arrow" x1="480" y1="120" x2="560" y2="120"/>
+  <rect class="box" x="560" y="20" width="150" height="65" rx="8"/><text x="597" y="58">Audit</text><text x="583" y="78">0600 receipt</text>
+  <line class="arrow" x1="480" y1="150" x2="560" y2="185"/>
+  <rect class="box" x="560" y="155" width="250" height="65" rx="8"/><text x="588" y="194">Herdr CLI → local socket</text>
+</svg>

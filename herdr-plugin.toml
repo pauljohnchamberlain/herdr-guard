@@ -1,0 +1,26 @@
+id = "com.kaizenbrands.herdr-guard"
+name = "Herdr Guard"
+version = "0.1.0"
+min_herdr_version = "0.8.2"
+description = "Guarded external control for Herdr from Codex, Claude, and other coding agents."
+platforms = ["linux", "macos"]
+
+[[build]]
+command = ["npm", "ci"]
+platforms = ["linux", "macos"]
+
+[[build]]
+command = ["npm", "run", "build"]
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "doctor"
+title = "Herdr Guard: doctor"
+contexts = ["global", "workspace", "pane"]
+command = ["node", "dist/cli.js", "doctor"]
+
+[[actions]]
+id = "operations"
+title = "Herdr Guard: operations"
+contexts = ["global", "workspace", "pane"]
+command = ["node", "dist/cli.js", "operations"]

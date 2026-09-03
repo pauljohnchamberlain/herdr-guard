@@ -1,0 +1,36 @@
+{
+  "name": "herdr-guard",
+  "version": "0.1.0",
+  "description": "Guarded external control for Herdr from Codex, Claude, and other coding agents.",
+  "type": "module",
+  "bin": {
+    "herdr-guard": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "herdr-plugin.toml",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "clean": "rm -rf dist dist-test",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test dist-test/test/*.test.js",
+    "security": "node scripts/security-check.mjs",
+    "manifest": "node scripts/validate-manifest.mjs",
+    "clean-install": "node scripts/clean-install.mjs",
+    "preflight": "npm run lint && npm run typecheck && npm test && npm run security && npm run build && npm run manifest && npm run clean-install"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
