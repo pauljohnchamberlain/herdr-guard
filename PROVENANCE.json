@@ -2,7 +2,7 @@
   "schema": 1,
   "project": "herdr-guard",
   "version": "0.1.0",
-  "source": "https://github.com/kaizen-brands/herdr-guard",
+  "source": "https://github.com/pauljohnchamberlain/herdr-guard",
   "build": "npm ci && npm run build",
   "runtime": "node >=20",
   "dependencies": {

@@ -12,7 +12,7 @@ an automatic, unreviewed index. Read the source before installing.
 Requires Herdr 0.8.2 or newer and Node.js 20 or newer:
 
 ```sh
-herdr plugin install kaizen-brands/herdr-guard
+herdr plugin install pauljohnchamberlain/herdr-guard
 herdr plugin list --plugin com.kaizenbrands.herdr-guard --json
 ```
 
@@ -107,7 +107,7 @@ does not widen authority.
 ## Update and uninstall
 
 ```sh
-herdr plugin install kaizen-brands/herdr-guard
+herdr plugin install pauljohnchamberlain/herdr-guard
 herdr plugin disable com.kaizenbrands.herdr-guard
 herdr plugin enable com.kaizenbrands.herdr-guard
 herdr plugin uninstall com.kaizenbrands.herdr-guard
