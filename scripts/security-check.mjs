@@ -6,7 +6,7 @@ function filesUnder(path) {
     return entry.isDirectory() ? filesUnder(child) : [child];
   });
 }
-const files = ["src", "test", "skills", "docs"].flatMap(filesUnder);
+const files = ["src", "test", "skills", "docs", "contracts"].flatMap(filesUnder);
 const forbidden = ["child_process.exec(", "execSync(", "eval(", "Function(", "curl ", "wget ", "https://"];
 for (const file of files) {
   const text = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");

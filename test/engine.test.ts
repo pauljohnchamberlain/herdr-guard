@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, statSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
@@ -6,6 +6,7 @@ import test from "node:test";
 import { GuardError } from "../src/errors.js";
 import { GuardEngine } from "../src/engine.js";
 import { FileAudit, type AuditWriter } from "../src/audit.js";
+import { normalizeSnapshot } from "../src/normalize.js";
 import type { HerdrAdapter } from "../src/herdr.js";
 import type { Snapshot } from "../src/types.js";
 
@@ -20,13 +21,15 @@ function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
 
 class FakeHerdr implements HerdrAdapter {
   current: Snapshot; calls: string[][] = []; readText = "done";
+  throwAfterInvoke = false; skipEffects = false;
   constructor(value = snapshot()) { this.current = value; }
   snapshot(): unknown { return this.current; }
   invoke(argv: readonly string[]): unknown {
     this.calls.push([...argv]);
-    if (argv[0] === "workspace" && argv[1] === "rename") this.current = { ...this.current, workspaces: this.current.workspaces.map((row) => row.id === argv[2] ? { ...row, label: argv[3] || null } : row) };
-    if (argv[0] === "workspace" && argv[1] === "close") this.current = { ...this.current, workspaces: this.current.workspaces.filter((row) => row.id !== argv[2]) };
-    if (argv[0] === "tab" && argv[1] === "close") this.current = { ...this.current, tabs: this.current.tabs.filter((row) => row.id !== argv[2]) };
+    if (!this.skipEffects && argv[0] === "workspace" && argv[1] === "rename") this.current = { ...this.current, workspaces: this.current.workspaces.map((row) => row.id === argv[2] ? { ...row, label: argv[3] || null } : row) };
+    if (!this.skipEffects && argv[0] === "workspace" && argv[1] === "close") this.current = { ...this.current, workspaces: this.current.workspaces.filter((row) => row.id !== argv[2]) };
+    if (!this.skipEffects && argv[0] === "tab" && argv[1] === "close") this.current = { ...this.current, tabs: this.current.tabs.filter((row) => row.id !== argv[2]) };
+    if (this.throwAfterInvoke) throw new Error("native response lost");
     return { ok: true };
   }
   readAgent(): string { return this.readText; }
@@ -74,6 +77,87 @@ test("lost close response reconciles without repeating the native effect", async
   audit.rows.push({ schemaVersion: 1, receiptId: "r1", operation: "workspace.close", targetId: "w1", targetDigest: proposal.targetDigest || "", proposalToken: proposal.proposalToken || "", status: "pending", timestamp: new Date().toISOString() });
   fake.current = { ...fake.current, workspaces: fake.current.workspaces.filter((row) => row.id !== "w1") };
   const result = await engine.reconcile(proposal.proposalToken); assert.equal(result.status, "reconciled"); assert.equal(fake.calls.length, 0); assert.equal(audit.rows.at(-1)?.status, "reconciled");
+});
+
+test("uncertain native effects remain reconcileable and are never retried", async () => {
+  const fake = new FakeHerdr(); fake.throwAfterInvoke = true;
+  const { engine, audit } = await makeEngine(fake);
+  const proposal = await engine.preview("workspace.close", "w1", undefined);
+  await assert.rejects(engine.apply("workspace.close", "w1", undefined, proposal.targetDigest, proposal.proposalToken));
+  assert.equal(audit.rows.at(-1)?.status, "pending");
+  assert.equal(audit.rows.at(-1)?.failure, "native_result_uncertain");
+  fake.throwAfterInvoke = false;
+  fake.current = { ...fake.current, workspaces: fake.current.workspaces.filter((row) => row.id !== "w1") };
+  const result = await engine.reconcile(proposal.proposalToken);
+  assert.equal(result.status, "reconciled");
+  assert.equal(fake.calls.length, 1);
+});
+
+test("native failure and postcondition failure remain visibly audited", async () => {
+  const nativeFailure = new FakeHerdr(); nativeFailure.throwAfterInvoke = true;
+  const nativeAudit = await makeEngine(nativeFailure);
+  const nativeProposal = await nativeAudit.engine.preview("workspace.rename", "w1", { label: "review" });
+  await assert.rejects(nativeAudit.engine.apply("workspace.rename", "w1", { label: "review" }, nativeProposal.targetDigest, nativeProposal.proposalToken));
+  assert.equal(nativeAudit.audit.rows.at(-1)?.status, "pending");
+  const postconditionFailure = new FakeHerdr(); postconditionFailure.skipEffects = true;
+  const postAudit = await makeEngine(postconditionFailure);
+  const postProposal = await postAudit.engine.preview("workspace.rename", "w1", { label: "review" });
+  await assert.rejects(postAudit.engine.apply("workspace.rename", "w1", { label: "review" }, postProposal.targetDigest, postProposal.proposalToken), (error: unknown) => error instanceof GuardError && error.code === "postcondition_failed");
+  assert.equal(postAudit.audit.rows.at(-1)?.failure, "postcondition_failed");
+});
+
+test("hostile target IDs fail before any Herdr call", async () => {
+  const { engine, fake } = await makeEngine();
+  await assert.rejects(engine.preview("workspace.close", "bad\n-id", undefined), (error: unknown) => error instanceof GuardError && error.code === "invalid_input");
+  assert.deepEqual(fake.calls, []);
+});
+
+test("malformed config and disabled operations fail closed", async () => {
+  const { engine } = await makeEngine();
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(join(process.env.HERDR_PLUGIN_CONFIG_DIR!, "config.json"), "{bad");
+  await assert.rejects(engine.doctor(), (error: unknown) => error instanceof GuardError && error.code === "invalid_config");
+  writeFileSync(join(process.env.HERDR_PLUGIN_CONFIG_DIR!, "config.json"), JSON.stringify({ allowedOperations: ["workspace.list"] }));
+  await assert.rejects(engine.preview("workspace.rename", "w1", { label: "review" }), (error: unknown) => error instanceof GuardError && error.code === "invalid_input");
+});
+
+test("language-independent contract fixtures cover generic decisions", async () => {
+  const fixture = JSON.parse(readFileSync(new URL("../../contracts/herdr-guard-contract.json", import.meta.url), "utf8")) as {
+    snapshots: Record<string, unknown>;
+    cases: Array<{ snapshot: string; operation: string; targetId: string; value?: unknown; expect?: string; expectError?: string }>;
+  };
+  for (const contract of fixture.cases) {
+    const fake = new FakeHerdr(normalizeSnapshot(fixture.snapshots[contract.snapshot]));
+    const { engine } = await makeEngine(fake);
+    if (contract.expectError) {
+      await assert.rejects(engine.preview(contract.operation, contract.targetId, contract.value), (error: unknown) => error instanceof GuardError && error.code === contract.expectError);
+    } else {
+      const proposal = await engine.preview(contract.operation, contract.targetId, contract.value);
+      assert.equal(proposal.status, contract.expect);
+    }
+  }
+});
+
+test("bounded fuzz inputs fail closed without invoking Herdr", async () => {
+  const { engine, fake } = await makeEngine();
+  let seed = 0x9e3779b9;
+  const next = (): number => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
+  for (let index = 0; index < 500; index += 1) {
+    const length = next() % 64;
+    const label = Array.from({ length }, () => String.fromCharCode(32 + (next() % 95))).join("");
+    if (label.trim() && !/[\u0000-\u001f\u007f]/u.test(label)) {
+      const proposal = await engine.preview("workspace.rename", "w1", { label });
+      assert.equal(typeof proposal.proposalToken, "string");
+    }
+  }
+  for (const label of ["\u0000", "\u001f", "\u007f", "x".repeat(65)]) {
+    await assert.rejects(engine.preview("workspace.rename", "w1", { label }), (error: unknown) => error instanceof GuardError && error.code === "invalid_input");
+  }
+  for (const targetId of ["", "bad\t-id", "x".repeat(257)]) {
+    await assert.rejects(engine.preview("workspace.close", targetId, undefined), (error: unknown) => error instanceof GuardError && error.code === "invalid_input");
+  }
+  await assert.rejects(engine.read("workspace.list", "w1"), (error: unknown) => error instanceof GuardError && error.code === "invalid_input");
+  assert.equal(fake.calls.length, 0);
 });
 
 test("file audit is private and rotates at a bounded size", () => {

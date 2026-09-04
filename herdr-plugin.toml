@@ -1,6 +1,6 @@
 id = "com.kaizenbrands.herdr-guard"
 name = "Herdr Guard"
-version = "0.1.1"
+version = "0.1.2"
 min_herdr_version = "0.8.2"
 description = "Guarded external control for Herdr from Codex, Claude, and other coding agents."
 platforms = ["linux", "macos"]

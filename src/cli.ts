@@ -10,10 +10,31 @@ function required(args: readonly string[], name: string): string { const value =
 function value(args: readonly string[]): unknown { const raw = option(args, "--value-json"); if (!raw) return undefined; try { return JSON.parse(raw); } catch { throw new GuardError("invalid_input", "--value-json must contain valid JSON"); } }
 function help(): void { output({ name: "herdr-guard", commands: ["doctor", "operations", "snapshot", "read", "preview", "apply", "reconcile", "audit"], mutation: "Preview first, then execute only the exact returned applyArgs." }); }
 
+function validateArguments(command: string, args: readonly string[]): void {
+  const allowed: Record<string, readonly string[]> = {
+    doctor: [], operations: [], snapshot: [], audit: [],
+    read: ["--operation", "--target-id"],
+    preview: ["--operation", "--target-id", "--value-json"],
+    apply: ["--operation", "--target-id", "--target-digest", "--proposal-token", "--value-json"],
+    reconcile: ["--proposal-token"],
+  };
+  const takesValue = new Set(allowed[command] || []);
+  const seen = new Set<string>();
+  for (let index = 0; index < args.length; index += 1) {
+    const name = args[index];
+    if (!name?.startsWith("--") || !takesValue.has(name) || seen.has(name)) throw new GuardError("invalid_input", `unknown, misplaced, or repeated argument: ${name || "(missing)"}`);
+    seen.add(name);
+    const next = args[index + 1];
+    if (!next || next.startsWith("--")) throw new GuardError("invalid_input", `missing value for ${name}`);
+    index += 1;
+  }
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
   if (!command || command === "--help" || command === "-h") { help(); return; }
+  validateArguments(command, args.slice(1));
   const engine = new GuardEngine(new CliHerdrAdapter());
   if (command === "doctor") output(await engine.doctor());
   else if (command === "operations") output({ operations: engine.operations() });

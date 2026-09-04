@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "snapshots": {
+    "baseline": {
+      "result": {
+        "snapshot": {
+          "focused_workspace_id": null,
+          "focused_tab_id": null,
+          "focused_pane_id": null,
+          "workspaces": [
+            {"workspace_id": "w-alpha", "label": "alpha", "active_tab_id": "t-alpha-shell", "cwd": "/tmp/herdr-guard/alpha", "tab_count": 2, "pane_count": 0},
+            {"workspace_id": "w-other", "label": "other", "active_tab_id": "t-other", "cwd": "/tmp/herdr-guard/other", "tab_count": 1, "pane_count": 0}
+          ],
+          "tabs": [
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-shell", "label": "shell", "focused": false, "pane_count": 0},
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-second", "label": "second", "focused": false, "pane_count": 0},
+            {"workspace_id": "w-other", "tab_id": "t-other", "label": "other", "focused": false, "pane_count": 0}
+          ],
+          "panes": []
+        }
+      }
+    },
+    "focused": {
+      "result": {
+        "snapshot": {
+          "focused_workspace_id": "w-alpha",
+          "focused_tab_id": "t-alpha-shell",
+          "focused_pane_id": null,
+          "workspaces": [
+            {"workspace_id": "w-alpha", "label": "alpha", "active_tab_id": "t-alpha-shell", "cwd": "/tmp/herdr-guard/alpha", "tab_count": 2, "pane_count": 0}
+          ],
+          "tabs": [
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-shell", "label": "shell", "focused": true, "pane_count": 0},
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-second", "label": "second", "focused": false, "pane_count": 0}
+          ],
+          "panes": []
+        }
+      }
+    },
+    "activeAgent": {
+      "result": {
+        "snapshot": {
+          "focused_workspace_id": null,
+          "focused_tab_id": null,
+          "focused_pane_id": null,
+          "workspaces": [
+            {"workspace_id": "w-alpha", "label": "alpha", "active_tab_id": "t-alpha-shell", "cwd": "/tmp/herdr-guard/alpha", "tab_count": 2, "pane_count": 1}
+          ],
+          "tabs": [
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-shell", "label": "shell", "focused": false, "pane_count": 1},
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-second", "label": "second", "focused": false, "pane_count": 0}
+          ],
+          "panes": [
+            {"workspace_id": "w-alpha", "tab_id": "t-alpha-shell", "pane_id": "p-agent", "cwd": "/tmp/herdr-guard/alpha", "agent": "codex", "agent_status": "working", "agent_session": {"source": "herdr:codex", "value": "synthetic-session"}}
+          ]
+        }
+      }
+    }
+  },
+  "cases": [
+    {"name": "rename", "snapshot": "baseline", "operation": "workspace.rename", "targetId": "w-alpha", "value": {"label": "review"}, "expect": "preview"},
+    {"name": "close-focused", "snapshot": "focused", "operation": "workspace.close", "targetId": "w-alpha", "expectError": "target_focused"},
+    {"name": "close-active-agent", "snapshot": "activeAgent", "operation": "workspace.close", "targetId": "w-alpha", "expectError": "active_agent"}
+  ]
+}
