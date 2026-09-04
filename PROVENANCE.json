@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "herdr-guard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "source": "https://github.com/pauljohnchamberlain/herdr-guard",
   "build": "npm ci && npm run build",
   "runtime": "node >=20",

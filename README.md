@@ -19,6 +19,20 @@ herdr plugin list --plugin com.kaizenbrands.herdr-guard --json
 The plugin does not add a global PATH shim. Herdr owns the managed checkout;
 the bundled skill resolves its root with `herdr plugin list` each time it runs.
 
+The dynamic `herdr-guard` commands below are intended to run from a
+Herdr-managed agent or plugin action. They require Herdr's injected
+`HERDR_ENV=1` and `HERDR_SOCKET_PATH` session context and fail closed without
+it; they never attach to an implicit focused or default session. From a normal
+terminal, use the static actions first:
+
+```sh
+herdr plugin action invoke doctor --plugin com.kaizenbrands.herdr-guard
+herdr plugin action invoke operations --plugin com.kaizenbrands.herdr-guard
+```
+
+Then install the bundled skill for your coding agent and run the dynamic
+workflow inside a Herdr-managed session.
+
 ## Discover and inspect
 
 ```sh

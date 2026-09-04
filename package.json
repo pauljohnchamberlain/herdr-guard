@@ -1,7 +1,12 @@
 {
   "name": "herdr-guard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Guarded external control for Herdr from Codex, Claude, and other coding agents.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pauljohnchamberlain/herdr-guard.git"
+  },
   "type": "module",
   "bin": {
     "herdr-guard": "dist/cli.js"
