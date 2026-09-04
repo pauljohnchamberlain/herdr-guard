@@ -16,6 +16,7 @@ export class FileAudit implements AuditWriter {
       let size = 0;
       try { size = statSync(this.path).size; } catch { /* first write */ }
       const line = `${JSON.stringify(receipt)}\n`;
+      if (Buffer.byteLength(line) > maxBytes) throw new Error("audit receipt exceeds configured maximum size");
       if (size + Buffer.byteLength(line) > maxBytes) {
         try { renameSync(`${this.path}.1`, `${this.path}.2`); } catch { /* bounded rotation has no older file */ }
         try { renameSync(this.path, `${this.path}.1`); } catch { /* first write */ }

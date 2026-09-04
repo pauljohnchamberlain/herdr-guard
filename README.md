@@ -151,7 +151,7 @@ paths reported by Herdr; this avoids deleting evidence unexpectedly.
 
 ## Limitations
 
-v0.1.0 supports Linux and macOS, local Herdr control only, and no Windows,
+v0.1.2 supports Linux and macOS, local Herdr control only, and no Windows,
 remote relay, MCP, telemetry, pane input, server control, arbitrary commands,
 or automatic permission approval. Provider session metadata is optional and
 does not affect generic Herdr operations.

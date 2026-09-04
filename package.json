@@ -1,6 +1,6 @@
 {
   "name": "herdr-guard",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Guarded external control for Herdr from Codex, Claude, and other coding agents.",
   "license": "Apache-2.0",
   "repository": {
@@ -13,6 +13,7 @@
   },
   "files": [
     "dist",
+    "contracts",
     "skills",
     "herdr-plugin.toml",
     "LICENSE",

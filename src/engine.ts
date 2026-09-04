@@ -1,7 +1,7 @@
 import { GuardError, fail } from "./errors.js";
 import { digest } from "./hash.js";
 import { getOperation, operationMetadata } from "./registry.js";
-import { normalizeSnapshot, targetDigest, targetFingerprint, unrelatedDigest, isFocused } from "./normalize.js";
+import { normalizeSnapshot, targetFingerprint, unrelatedDigest, isFocused } from "./normalize.js";
 import { ensureConfigDirs, loadConfig } from "./config.js";
 import { FileAudit, pendingReceipt, type AuditWriter } from "./audit.js";
 import type { HerdrAdapter } from "./herdr.js";
@@ -24,6 +24,8 @@ export class GuardEngine {
     const spec = getOperation(operation);
     this.assertAllowed(await this.config(), spec.operation);
     if (spec.effectClass !== "read") fail("invalid_input", `${operation} is not a read operation`);
+    if (targetId !== undefined) this.validateTargetId(targetId);
+    if (targetId !== undefined && operation !== "agent.get" && operation !== "agent.read") fail("invalid_input", `${operation} does not accept a target ID`);
     const snapshot = this.snapshot();
     switch (operation) {
       case "snapshot": return snapshot;
@@ -48,8 +50,10 @@ export class GuardEngine {
     const spec = getOperation(operation);
     const config = await this.config();
     this.assertAllowed(config, spec.operation);
+    if (targetId !== undefined) this.validateTargetId(targetId);
     if (spec.effectClass === "read") return { status: "preview", operation: spec.operation, applyArgs: ["read", "--operation", spec.operation, ...(targetId ? ["--target-id", targetId] : [])] };
     if (!targetId) fail("invalid_input", `${operation} requires --target-id`);
+    this.validateTargetId(targetId);
     const snapshot = this.snapshot();
     const value = this.validateValue(spec.operation, rawValue);
     const kind = spec.resourceKind === "workspace" ? "workspace" : "tab";
@@ -82,7 +86,10 @@ export class GuardEngine {
     const argv = (spec.argvTemplate || []).map((part) => part === "{target_id}" ? targetId : part === "{label}" ? String(value.label) : part);
     let nativeResult: unknown;
     try { nativeResult = this.herdr.invoke(argv); } catch (error) {
-      try { this.audit.write({ ...receipt, status: "failed", failure: "native_operation_failed", timestamp: new Date().toISOString() }, config.auditMaxBytes); } catch { /* preserve original native failure */ }
+      // The native command may have taken effect before its response was lost.
+      // Keep the write-ahead receipt pending so reconcile can prove the exact
+      // postcondition without ever repeating the mutation.
+      try { this.audit.write({ ...receipt, status: "pending", failure: "native_result_uncertain", timestamp: new Date().toISOString() }, config.auditMaxBytes); } catch { /* preserve original native failure */ }
       throw error;
     }
     const after = this.snapshot();
@@ -134,7 +141,12 @@ export class GuardEngine {
     return {};
   }
 
+  private validateTargetId(targetId: string): void {
+    if (!targetId || targetId.length > 256 || /[\u0000-\u001f\u007f]/u.test(targetId)) fail("invalid_input", "target ID must be nonempty, control-free, and at most 256 characters");
+  }
+
   private guardDestructive(snapshot: Snapshot, operation: OperationKey, targetId: string, config: GuardConfig): void {
+    this.validateTargetId(targetId);
     const kind = operation === "workspace.close" ? "workspace" : "tab";
     if (isFocused(snapshot, kind, targetId)) fail("target_focused", `${operation} refuses a focused target`);
     const target = kind === "workspace" ? snapshot.workspaces.find((row) => row.id === targetId) : snapshot.tabs.find((row) => row.id === targetId);
