@@ -1,8 +1,26 @@
 # Herdr Guard
 
 Guarded external control for Herdr from Codex, Claude, and other coding
-agents. Herdr Guard lets an agent inspect a local Herdr session and make a
+agents. Herdr Guard lets an agent inspect a Herdr session and make a
 small set of explicit, reviewable changes without relying on the focused pane.
+
+## What this is for
+
+I built Herdr Guard so I can manage a remote Herdr session from Codex Desktop.
+The Herdr session is separate from the agent process, so Codex can inspect it
+and make a few guarded workspace changes through Herdr's own session context.
+It is not a new relay or a second session manager.
+
+Use it when you need to:
+
+- inspect workspaces, tabs, agents, and recent agent output;
+- rename one exact workspace after previewing the change; or
+- close finished, inactive work after Herdr Guard checks the target, focus,
+  protected labels, last-tab rule, and active agents.
+
+Do not use it to start agents, type into panes, run arbitrary commands, stop
+Herdr, or guess which workspace is focused. Those operations are outside the
+plugin's contract.
 
 Herdr plugins run as the current user and are not sandboxed. The marketplace is
 an automatic, unreviewed index. Read the source before installing.
