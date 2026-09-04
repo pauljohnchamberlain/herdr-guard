@@ -13,6 +13,8 @@ The v0.1.0 boundary is intentionally narrow:
 - focused targets and active agents/sessions are refused for destructive work;
 - audit receipts are written before effects and contain no pane or prompt text;
 - malformed configuration and audit failures fail closed.
+- commands without Herdr-injected session context fail closed instead of
+  selecting the focused or default session.
 
 Report security issues privately to the repository maintainers before opening a
 public issue. Do not include credentials, session output, or private paths in a
